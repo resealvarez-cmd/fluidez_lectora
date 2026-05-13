@@ -2,7 +2,7 @@
  * API Client — Fluidez Lectora
  * Centraliza todas las llamadas al backend FastAPI
  */
-const API_BASE = "http://localhost:8001";
+const API_BASE = "https://fluidez-lectora.onrender.com";
 
 const api = {
   _token: () => localStorage.getItem('fl_token'),
