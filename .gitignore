@@ -10,4 +10,4 @@ node_modules/
 .vscode/
 .idea/
 backend/lecturas_audio/
-frontend/assets/*.png
+# frontend/assets/*.png (Comentado para permitir iconos de PWA)
