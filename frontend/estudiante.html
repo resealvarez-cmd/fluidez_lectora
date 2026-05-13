@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Pantalla de lectura para el estudiante — Fluidez Lectora" />
+  <meta name="theme-color" content="#0F172A" />
+  <title>Fluidez Lectora · Estudiante</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Merriweather:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles.css?v=4" />
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body data-view="estudiante">
+
+  <!-- PANTALLA: ESPERA (antes de la lectura) -->
+  <div class="student-screen" id="screen-espera">
+    <div class="student-hero">
+      <div class="student-mascot" id="mascot-idle">📖</div>
+      <h1 class="student-greeting">¡Hola, lector!</h1>
+      <p class="student-subtitle">Tu profe preparó una lectura especial para ti.</p>
+      <div class="loading-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="wait-text" id="wait-text">Esperando que el profe inicie la sesión...</p>
+    </div>
+  </div>
+
+  <!-- PANTALLA: LECTURA ACTIVA -->
+  <div class="student-screen hidden" id="screen-lectura">
+    <div class="lectura-container">
+
+      <!-- Cabecera con nombre del estudiante y texto -->
+      <div class="lectura-header">
+        <div class="lectura-badge">
+          <span class="badge-icon">📚</span>
+          <span id="lectura-titulo">Cargando texto...</span>
+        </div>
+        <div class="lectura-info">
+          <span id="lectura-palabras">0 palabras</span>
+        </div>
+      </div>
+
+      <!-- El texto a leer -->
+      <div class="texto-display" id="texto-display">
+        <div class="texto-loading">Cargando texto...</div>
+      </div>
+
+      <!-- Controles de grabación -->
+      <div class="recording-panel">
+        <div class="recording-state" id="rec-state-idle">
+          <p class="rec-instructions">
+            Cuando estés listo, presiona el botón y empieza a leer en voz alta 🎙️
+          </p>
+          <button class="btn-record" id="btn-record-start" onclick="iniciarGrabacion()">
+            <div class="record-icon">🎙️</div>
+            <span>¡Empezar a leer!</span>
+          </button>
+        </div>
+
+        <div class="recording-state hidden" id="rec-state-recording">
+          <div class="recording-indicator">
+            <div class="pulse-ring"></div>
+            <div class="pulse-core">🔴</div>
+          </div>
+          <p class="rec-status-text">Grabando... Lee el texto en voz alta</p>
+          <div class="timer-display" id="rec-timer">0:00</div>
+          <button class="btn-record btn-stop" id="btn-record-stop" onclick="detenerGrabacion()">
+            <div class="record-icon">⏹️</div>
+            <span>Terminar lectura</span>
+          </button>
+        </div>
+
+        <div class="recording-state hidden" id="rec-state-procesando">
+          <div class="procesando-animation">
+            <div class="wave-bars">
+              <div></div><div></div><div></div><div></div><div></div>
+            </div>
+          </div>
+          <p class="rec-status-text">Analizando tu lectura...</p>
+          <p class="rec-status-sub">La IA está revisando cada palabra 🔍</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA: RESULTADO -->
+  <div class="student-screen hidden" id="screen-resultado" style="text-align: center;">
+    <div class="resultado-container" style="box-shadow: none; background: transparent;">
+      <div class="resultado-header">
+        <div class="resultado-mascot" id="resultado-mascot" style="font-size: 80px; margin-bottom: 24px;">🎉</div>
+        <h2 class="resultado-title" id="resultado-title" style="font-size: 36px; color: var(--accent);">¡Lo hiciste excelente!</h2>
+        <p class="resultado-subtitle" id="resultado-subtitle" style="font-size: 20px; color: var(--text2); max-width: 400px; margin: 16px auto; line-height: 1.5;">Tu profesor procesará la evaluación en su tablet.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/api.js?v=4"></script>
+  <script src="src/estudiante.js?v=4"></script>
+</body>
+</html>

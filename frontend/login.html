@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluidez Lectora · Acceso Docente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles.css?v=5" />
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); font-family: var(--font-sans); }
+    .login-wrapper { display: flex; width: 100%; max-width: 960px; min-height: 560px; box-shadow: 0 24px 64px rgba(0,0,0,0.12); border-radius: 20px; overflow: hidden; }
+    .login-hero { flex: 1; background: var(--bg-sidebar); display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 56px; }
+    .login-hero-icon { font-size: 56px; margin-bottom: 24px; }
+    .login-hero h1 { font-size: 32px; font-weight: 900; color: white; margin-bottom: 12px; line-height: 1.2; }
+    .login-hero p { color: rgba(255,255,255,0.6); font-size: 15px; line-height: 1.6; max-width: 280px; }
+    .login-hero .badges { display: flex; gap: 8px; margin-top: 32px; flex-wrap: wrap; }
+    .login-hero .badge { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .login-form-panel { flex: 1; background: white; padding: 56px; display: flex; flex-direction: column; justify-content: center; }
+    .login-form-panel h2 { font-size: 24px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+    .login-form-panel p.sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+    .tab-switch { display: flex; background: var(--bg); border-radius: 10px; padding: 4px; margin-bottom: 28px; }
+    .tab-btn { flex: 1; padding: 8px; border: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); border-radius: 8px; transition: all 0.2s; }
+    .tab-btn.active { background: white; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .form-panel { display: none; }
+    .form-panel.active { display: block; }
+    .login-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; display: none; }
+    @media(max-width: 640px) { .login-hero { display: none; } .login-wrapper { border-radius: 0; min-height: 100vh; } .login-form-panel { padding: 32px 24px; } }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <!-- Hero Panel -->
+    <div class="login-hero">
+      <div class="login-hero-icon">📖</div>
+      <h1>Fluidez Lectora</h1>
+      <p>Evalúa la velocidad y precisión lectora de tus estudiantes con tecnología de reconocimiento de voz.</p>
+      <div class="badges">
+        <span class="badge">Rúbrica ACE</span>
+        <span class="badge">QR por alumno</span>
+        <span class="badge">PDF automático</span>
+      </div>
+    </div>
+
+    <!-- Form Panel -->
+    <div class="login-form-panel">
+      <h2>Bienvenido/a, Profe 👋</h2>
+      <p class="sub">Inicia sesión para acceder a tu panel docente.</p>
+
+      <div class="tab-switch">
+        <button class="tab-btn active" onclick="switchTab('login')">Iniciar sesión</button>
+        <button class="tab-btn" onclick="switchTab('register')">Registrarse</button>
+      </div>
+
+      <!-- Login -->
+      <div class="form-panel active" id="panel-login">
+        <div class="login-error" id="login-error"></div>
+        <form onsubmit="doLogin(event)">
+          <div class="form-group">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" class="form-input" id="login-email" placeholder="profe@colegio.cl" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-input" id="login-password" placeholder="••••••••" required autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-login" style="width: 100%; padding: 14px; margin-top: 8px;">
+            Entrar al panel →
+          </button>
+        </form>
+      </div>
+
+      <!-- Register -->
+      <div class="form-panel" id="panel-register">
+        <div class="login-error" id="register-error"></div>
+        <form onsubmit="doRegister(event)">
+          <div class="form-group">
+            <label class="form-label">Nombre completo</label>
+            <input type="text" class="form-input" id="reg-nombre" placeholder="Nombre Apellido" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" class="form-input" id="reg-email" placeholder="profe@colegio.cl" required autocomplete="email" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <input type="password" class="form-input" id="reg-password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password" />
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-register" style="width: 100%; padding: 14px; margin-top: 8px;">
+            Crear cuenta →
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/api.js?v=5"></script>
+  <script>
+    // Redirect if already logged in
+    if (localStorage.getItem('fl_token')) {
+      window.location.href = '/';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0) === (tab === 'login')));
+      document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+      document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+
+    async function doLogin(e) {
+      e.preventDefault();
+      document.getElementById('login-error').style.display = 'none';
+      const btn = document.getElementById('btn-login');
+      btn.textContent = 'Entrando...'; btn.disabled = true;
+      try {
+        const res = await api.login(
+          document.getElementById('login-email').value,
+          document.getElementById('login-password').value
+        );
+        localStorage.setItem('fl_token', res.access_token);
+        localStorage.setItem('fl_usuario', JSON.stringify(res.usuario));
+        window.location.href = '/';
+      } catch (err) {
+        showError('login-error', 'Correo o contraseña incorrectos.');
+        btn.textContent = 'Entrar al panel →'; btn.disabled = false;
+      }
+    }
+
+    async function doRegister(e) {
+      e.preventDefault();
+      document.getElementById('register-error').style.display = 'none';
+      const btn = document.getElementById('btn-register');
+      btn.textContent = 'Creando cuenta...'; btn.disabled = true;
+      try {
+        const res = await api.register(
+          document.getElementById('reg-nombre').value,
+          document.getElementById('reg-email').value,
+          document.getElementById('reg-password').value
+        );
+        localStorage.setItem('fl_token', res.access_token);
+        localStorage.setItem('fl_usuario', JSON.stringify(res.usuario));
+        window.location.href = '/';
+      } catch (err) {
+        showError('register-error', 'No se pudo crear la cuenta. El correo puede estar en uso.');
+        btn.textContent = 'Crear cuenta →'; btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

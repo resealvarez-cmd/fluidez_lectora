@@ -1,0 +1,23 @@
+import asyncio
+import asyncpg
+import sys
+
+async def test():
+    # Intento con Session Pooler (5432) y usuario con ref
+    user = "postgres.chzxsaxeshipenvhsgoy"
+    host = "aws-0-us-east-2.pooler.supabase.com"
+    port = 5432
+    db = "postgres"
+    password = "Renesebastian030818"
+    
+    dsn = f"postgresql://{user}:{password}@{host}:{port}/{db}?sslmode=require"
+    print(f"Probando {dsn}")
+    try:
+        conn = await asyncpg.connect(dsn)
+        print("✅ Éxito!")
+        await conn.close()
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(test())
