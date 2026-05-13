@@ -24,6 +24,12 @@ def _build_db_url(url: str) -> str:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("sqlite:///") and "+aiosqlite" not in url:
         url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    
+    # Asegurar SSL para PostgreSQL en producción (Vital para Render/Supabase)
+    if "postgresql" in url and "ssl" not in url:
+        separator = "&" if "?" in url else "?"
+        url += f"{separator}ssl=require"
+        
     return url
 
 

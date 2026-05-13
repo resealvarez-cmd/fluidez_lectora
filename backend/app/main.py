@@ -30,11 +30,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — permitir acceso desde la tablet/frontend
+# CORS — política de seguridad para producción (Netlify) y desarrollo
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.origins_list if settings.origins_list != ["*"] else [],
-    allow_origin_regex=".*" if settings.origins_list == ["*"] else None,
+    allow_origins=["https://fluidezcmp.netlify.app", "http://localhost:3000", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
