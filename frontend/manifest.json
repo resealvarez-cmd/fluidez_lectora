@@ -9,13 +9,13 @@
   "background_color": "#0F172A",
   "icons": [
     {
-      "src": "./assets/icon-192.png",
+      "src": "./assets/logo_profeic.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./assets/icon-512.png",
+      "src": "./assets/logo_profeic.png",
       "sizes": "512x512",
       "type": "image/png"
     }
