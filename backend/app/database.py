@@ -39,15 +39,16 @@ _is_sqlite = "sqlite" in _db_url
 kwargs = {
     "echo": False,
 }
-if _is_sqlite:
-    kwargs["connect_args"] = {"check_same_thread": False}
-else:
-    # Para Supabase Pooler (Supavisor) es vital desactivar el cache de statements
+
+# Configuración específica para el Pooler de Supabase
+if not _is_sqlite:
     kwargs["poolclass"] = NullPool
     kwargs["connect_args"] = {
-        "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        "statement_cache_size": 0
     }
+else:
+    kwargs["connect_args"] = {"check_same_thread": False}
 
 engine = create_async_engine(_db_url, **kwargs)
 
