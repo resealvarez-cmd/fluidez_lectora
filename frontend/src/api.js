@@ -8,46 +8,70 @@ const api = {
   _token: () => localStorage.getItem('fl_token'),
 
   async get(path) {
-    const headers = {};
-    const t = api._token();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
-    const r = await fetch(API_BASE + path, { headers });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
+    try {
+      const headers = {};
+      const t = api._token();
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      const r = await fetch(API_BASE + path, { headers });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (err) {
+      console.error(`API GET Error [${path}]:`, err);
+      throw err;
+    }
   },
   async post(path, body) {
-    const headers = { "Content-Type": "application/json" };
-    const t = api._token();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
-    const r = await fetch(API_BASE + path, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
+    try {
+      const headers = { "Content-Type": "application/json" };
+      const t = api._token();
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      const r = await fetch(API_BASE + path, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (err) {
+      console.error(`API POST Error [${path}]:`, err);
+      throw err;
+    }
   },
   async delete(path) {
-    const headers = {};
-    const t = api._token();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
-    const r = await fetch(API_BASE + path, { method: "DELETE", headers });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
+    try {
+      const headers = {};
+      const t = api._token();
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      const r = await fetch(API_BASE + path, { method: "DELETE", headers });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (err) {
+      console.error(`API DELETE Error [${path}]:`, err);
+      throw err;
+    }
   },
   async upload(path, formData) {
-    const headers = {};
-    const t = api._token();
-    if (t) headers['Authorization'] = `Bearer ${t}`;
-    const r = await fetch(API_BASE + path, { method: "POST", headers, body: formData });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
+    try {
+      const headers = {};
+      const t = api._token();
+      if (t) headers['Authorization'] = `Bearer ${t}`;
+      const r = await fetch(API_BASE + path, { method: "POST", headers, body: formData });
+      if (!r.ok) throw new Error(await r.text());
+      return r.json();
+    } catch (err) {
+      console.error(`API UPLOAD Error [${path}]:`, err);
+      throw err;
+    }
   },
 
   // ── Auth
   login: (email, password) => api.post('/api/auth/login', { email, password }),
   register: (nombre, email, password) => api.post('/api/auth/register', { nombre, email, password }),
-  logout: () => { localStorage.removeItem('fl_token'); localStorage.removeItem('fl_usuario'); window.location.href = '/login.html'; },
+  logout: () => { 
+    localStorage.removeItem('fl_token'); 
+    localStorage.removeItem('fl_usuario'); 
+    window.location.href = 'login.html'; 
+  },
   getUsuario: () => JSON.parse(localStorage.getItem('fl_usuario') || 'null'),
 
   // ── Estudiantes
