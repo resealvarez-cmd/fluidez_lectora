@@ -40,7 +40,7 @@ kwargs = {
     "echo": False,
 }
 
-# Configuración específica para el Pooler de Supabase
+# Configuración Final: Compatibilidad con Pooler de Supabase (Modo Transacción)
 if not _is_sqlite:
     kwargs["poolclass"] = NullPool
     kwargs["connect_args"] = {
