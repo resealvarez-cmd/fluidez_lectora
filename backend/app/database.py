@@ -36,21 +36,23 @@ def _build_db_url(url: str) -> str:
 _db_url = _build_db_url(settings.DATABASE_URL)
 _is_sqlite = "sqlite" in _db_url
 
-kwargs = {
-    "echo": False,
-}
-
-# Configuración Final: Compatibilidad con Pooler de Supabase (Modo Transacción)
+# Configuración del motor (Engine)
 if not _is_sqlite:
-    kwargs["poolclass"] = NullPool
-    kwargs["connect_args"] = {
-        "prepared_statement_cache_size": 0,
-        "statement_cache_size": 0
-    }
+    # Producción: Desactivar totalmente el caché de sentencias para compatibilidad con Supabase Pooler
+    engine = create_async_engine(
+        _db_url,
+        poolclass=NullPool,
+        connect_args={
+            "prepared_statement_cache_size": 0,
+            "statement_cache_size": 0
+        }
+    )
 else:
-    kwargs["connect_args"] = {"check_same_thread": False}
-
-engine = create_async_engine(_db_url, **kwargs)
+    # Desarrollo local: SQLite
+    engine = create_async_engine(
+        _db_url,
+        connect_args={"check_same_thread": False}
+    )
 
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
