@@ -1,0 +1,21 @@
+{
+  "short_name": "Fluidez Lectora",
+  "name": "Sistema de Evaluación de Fluidez Lectora",
+  "icons": [
+    {
+      "src": "assets/logo_profeic.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/logo_profeic.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#000000"
+}
