@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
     AUDIO_STORAGE_BUCKET: str = "lecturas-audio"
     SECRET_KEY: str = "dev-secret-key-change-in-production"
-    ALLOWED_ORIGINS: str = "*"
+    ALLOWED_ORIGINS: str = "https://fluidezcmp.netlify.app,http://localhost:3000,http://localhost:8000"
 
     # Thresholds de análisis
     PAUSA_LARGA_SEGUNDOS: float = 2.5

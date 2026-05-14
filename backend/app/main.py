@@ -30,10 +30,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — política de seguridad para producción (Netlify) y desarrollo
+# CORS — política de seguridad dinámica basada en settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://fluidezcmp.netlify.app", "http://localhost:3000", "http://localhost:8000"],
+    allow_origins=settings.origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

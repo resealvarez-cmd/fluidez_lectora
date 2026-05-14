@@ -3,7 +3,7 @@
   "short_name": "FluidezIA",
   "description": "Herramienta de evaluación de fluidez lectora con IA",
   "start_url": "./index.html",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#0F172A",
   "background_color": "#0F172A",
