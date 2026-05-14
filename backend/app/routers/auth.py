@@ -1,7 +1,7 @@
 """
 Router: Auth — Login y registro de docentes
 """
-import jwt  # Usamos PyJWT para evitar conflictos en producción
+from jose import jwt  # Regresamos a python-jose por requerimiento de producción
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -92,8 +92,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Token no contiene sub")
     except Exception as e:
         print(f"Error decodificando JWT: {e}")
         raise HTTPException(status_code=401, detail="Token inválido o expirado")
