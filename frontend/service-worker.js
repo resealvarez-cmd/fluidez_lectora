@@ -1,15 +1,14 @@
 const CACHE_NAME = 'fluidezia-v1';
 const ASSETS = [
-  './',
-  './index.html',
-  './login.html',
-  './estudiante.html',
-  './src/styles.css',
-  './src/api.js',
-  './src/docente.js',
-  './src/estudiante.js',
-  './manifest.json',
-  './assets/logo_profeic.png'
+  'index.html',
+  'login.html',
+  'estudiante.html',
+  'src/styles.css',
+  'src/api.js',
+  'src/docente.js',
+  'src/estudiante.js',
+  'manifest.json',
+  'assets/logo_profeic.png'
 ];
 
 // Instalación: Cachear activos estáticos
@@ -45,7 +44,7 @@ self.addEventListener('fetch', event => {
           }
           return networkResponse;
         }).catch(() => {
-          // Si falla la red, ya retornamos la cache abajo
+          // Fail silently
         });
         return response || fetchPromise;
       });
