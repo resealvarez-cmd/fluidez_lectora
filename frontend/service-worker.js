@@ -1,5 +1,6 @@
-const CACHE_NAME = 'fluidezia-v1';
+const CACHE_NAME = 'fluidezia-v2';
 const ASSETS = [
+  './',
   'index.html',
   'login.html',
   'estudiante.html',
@@ -11,16 +12,16 @@ const ASSETS = [
   'assets/logo_profeic.png'
 ];
 
-// Instalación: Cachear activos estáticos
+// Instalación: Cachear activos estáticos y forzar activación inmediata
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
   );
 });
 
-// Activación: Limpiar caches antiguos
+// Activación: Limpiar caches antiguos para no quedarse con versiones rotas
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -31,23 +32,23 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Estrategia: Stale-while-revalidate
+// Estrategia: Stale-while-revalidate ignorando parámetros de búsqueda (?v=30)
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  
+
   event.respondWith(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.match(event.request).then(response => {
-        const fetchPromise = fetch(event.request).then(networkResponse => {
-          if (networkResponse.ok) {
+    caches.match(event.request, { ignoreSearch: true }).then(response => {
+      const fetchPromise = fetch(event.request).then(networkResponse => {
+        if (networkResponse.ok) {
+          caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
-          // Fail silently
-        });
-        return response || fetchPromise;
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        // Fallar silenciosamente si estamos sin conexión
       });
+      return response || fetchPromise;
     })
   );
 });

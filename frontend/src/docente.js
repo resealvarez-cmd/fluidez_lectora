@@ -12,7 +12,7 @@ async function init() {
     // Mostrar nombre del docente en sidebar
     const logotitle = document.querySelector('.logo-title');
     if (logotitle && _usuario) logotitle.textContent = _usuario.nombre.split(' ')[0];
-    
+
     await checkHealth();
     await loadTextos();
     await loadEstudiantes();
@@ -48,32 +48,32 @@ async function generarFichaIndividualPDF(lecturaId) {
     const doc = new jspdfLib.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
-    
+
     // --- PÁGINA 1: RESUMEN Y MÉTRICAS ---
     // Encabezado
-    doc.setFillColor(30, 41, 59); 
+    doc.setFillColor(30, 41, 59);
     doc.rect(0, 0, W, 45, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22); doc.setFont('helvetica', 'bold');
     doc.text('INFORME DE DESEMPEÑO LECTOR', 15, 20);
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     doc.text('ANÁLISIS PSICOPEDAGÓGICO IA — PROFEIC', 15, 28);
-    
+
     // Datos Alumno
     doc.setFillColor(248, 250, 252); doc.rect(0, 45, W, 25, 'F');
     doc.setTextColor(30, 41, 59);
     doc.setFontSize(11); doc.setFont('helvetica', 'bold');
     doc.text(`ESTUDIANTE: ${l.estudiante.toUpperCase()}`, 15, 55);
-    
+
     // Fix Invalid Date bug
     const fechaLectura = l.created_at ? new Date(l.created_at).toLocaleDateString('es-CL') : new Date().toLocaleDateString('es-CL');
     doc.text(`CURSO: ${l.curso}   |   FECHA: ${fechaLectura}`, 15, 62);
-    
+
     // Métricas en tabla (Contrato irrompible)
     const m = l.metricas || {};
     const labelVelocidad = m.es_texto_breve ? 'Velocidad Proyectada' : 'Velocidad (Palabras por Minuto)';
     const valorVelocidad = m.wcpm_proyectado ? `${Math.round(m.wcpm)}*` : Math.round(m.wcpm || 0);
-    
+
     const tableBody = [
       [labelVelocidad, valorVelocidad, m.nivel_ace || nivelLabel(m.nivel_fluidez)],
       ['Precisión de Decodificación', `${Math.round(m.precision_pct || 0)}%`, '-'],
@@ -100,14 +100,14 @@ async function generarFichaIndividualPDF(lecturaId) {
     let y = doc.lastAutoTable.finalY + 15;
     doc.setFontSize(14); doc.setFont('helvetica', 'bold');
     doc.text('Diagnóstico Pedagógico y Estrategia', 15, y);
-    
+
     y += 8;
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     doc.setTextColor(50, 50, 50);
-    
+
     const feedback = l.feedback_ia || "No hay diagnóstico disponible para esta lectura.";
     const splitText = doc.splitTextToSize(feedback, W - 30);
-    
+
     // Loop para manejar el texto largo y saltos de página
     for (let i = 0; i < splitText.length; i++) {
       if (y > H - 20) {
@@ -117,13 +117,13 @@ async function generarFichaIndividualPDF(lecturaId) {
       doc.text(splitText[i], 15, y);
       y += 6; // Interlineado
     }
-    
+
     // Pie de página (en todas las páginas)
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setTextColor(150);
-      doc.text(`Página ${i} de ${pageCount} — Generado por FluidezIA`, W/2, 285, {align: 'center'});
+      doc.text(`Página ${i} de ${pageCount} — Generado por FluidezIA`, W / 2, 285, { align: 'center' });
     }
 
     doc.save(`Informe_${l.estudiante.replace(/\s/g, '_')}.pdf`);
@@ -245,7 +245,7 @@ async function crearEstudiante(e) {
     populateStudentSelects();
     populateCursoSelects();
     const sel = document.getElementById('sel-estudiante');
-    if(sel) sel.value = est.id;
+    if (sel) sel.value = est.id;
     closeModal('modal-nuevo-estudiante');
     e.target.reset();
     showToast('Estudiante registrado ✓', 'success');
@@ -289,7 +289,7 @@ function populateTextSelect() {
     textos.map(t => `<option value="${t.id}">${t.titulo} (${t.palabras_totales} pal.)</option>`).join('');
 }
 
-document.addEventListener('change', function(e) {
+document.addEventListener('change', function (e) {
   if (e.target.id === 'sel-texto') {
     const t = textos.find(x => x.id === e.target.value);
     const prev = document.getElementById('texto-preview-sesion');
@@ -299,11 +299,38 @@ document.addEventListener('change', function(e) {
       prev.style.display = 'block';
     } else { prev.style.display = 'none'; }
   }
+
+  // NUEVO: Filtra los estudiantes según el curso seleccionado
+  if (e.target.id === 'sel-curso-masivo') {
+    const curso = e.target.value;
+    const selEst = document.getElementById('sel-estudiante');
+    if (!curso) {
+      selEst.innerHTML = '<option value="">— Selecciona primero un curso —</option>';
+      return;
+    }
+    const estudiantesDelCurso = estudiantes.filter(est => est.curso === curso);
+    selEst.innerHTML = '<option value="">— Selecciona un estudiante —</option>' +
+      estudiantesDelCurso.map(est => `<option value="${est.id}">${est.nombre} ${est.apellido}</option>`).join('');
+  }
+
   if (e.target.id === 'txt-contenido') {
     const words = e.target.value.trim().split(/\s+/).filter(Boolean).length;
     document.getElementById('word-count').textContent = `${words} palabras`;
   }
 });
+
+// NUEVO: Función que ejecuta el botón principal del Wizard
+function iniciarSesion() {
+  const estId = document.getElementById('sel-estudiante').value;
+  const textoId = document.getElementById('sel-texto').value;
+
+  if (!estId || !textoId) {
+    showToast('⚠️ Debes seleccionar un estudiante y un texto.', 'error');
+    return;
+  }
+
+  iniciarSesionEstudiante(estId, textoId);
+}
 
 // ── Resultados ────────────────────────────────────────────────────
 let resultadosList = [];
@@ -322,11 +349,11 @@ function filtrarResultados() {
 function renderResultados() {
   const container = document.getElementById('lista-resultados');
   if (!container) return;
-  
+
   const filtroEst = document.getElementById('filtro-estudiante-resultados').value;
   const filtroCurso = document.getElementById('filtro-curso-resultados').value;
   const filtroEstado = document.getElementById('filtro-estado-resultados').value;
-  
+
   let filtrados = resultadosList;
   if (filtroEst) filtrados = filtrados.filter(r => r.estudiante === document.getElementById('filtro-estudiante-resultados').options[document.getElementById('filtro-estudiante-resultados').selectedIndex].text);
   if (filtroCurso) filtrados = filtrados.filter(r => r.curso === filtroCurso);
@@ -343,7 +370,7 @@ function renderResultados() {
       <td><strong>${r.estudiante}</strong></td>
       <td><span class="chip">${r.curso}</span></td>
       <td>${r.texto_titulo}</td>
-      <td><span class="chip ${r.estado === 'completado' ? 'success' : (r.estado==='error'?'error':'')}">${r.estado.toUpperCase()}</span></td>
+      <td><span class="chip ${r.estado === 'completado' ? 'success' : (r.estado === 'error' ? 'error' : '')}">${r.estado.toUpperCase()}</span></td>
       <td>${r.metricas ? `<strong>${r.metricas.wcpm}${r.metricas.wcpm_proyectado ? '*' : ''}</strong>` : '—'}</td>
       <td>${r.metricas ? `${Math.round(r.metricas.precision_pct)}%` : '—'}</td>
       <td>${r.metricas ? `<span class="chip nivel-${r.metricas.nivel_fluidez || 'bajo'}">${r.metricas.nivel_ace || nivelLabel(r.metricas.nivel_fluidez)}</span>` : '—'}</td>
@@ -373,7 +400,7 @@ async function generarReporteCurso() {
     showToast('Selecciona un curso primero', 'info');
     return;
   }
-  
+
   const lecturasCurso = resultadosList.filter(r => r.curso === curso && r.estado === 'completado');
   if (!lecturasCurso.length) {
     showToast('No hay evaluaciones completadas para este curso', 'info');
@@ -383,7 +410,7 @@ async function generarReporteCurso() {
   // Cálculos de grupo
   const avgWCPM = lecturasCurso.reduce((acc, r) => acc + (r.metricas?.wcpm || 0), 0) / lecturasCurso.length;
   const avgPrec = lecturasCurso.reduce((acc, r) => acc + (r.metricas?.precision_pct || 0), 0) / lecturasCurso.length;
-  
+
   // Abrir modal de reporte de curso (usaremos el mismo modal de resultados pero con otro contenido)
   document.getElementById('resultado-modal-title').innerHTML = `
     <div style="display:flex; align-items:center; gap:12px;">
@@ -452,7 +479,7 @@ async function verResultadoDetalle(id, nombreEstudiante) {
     const m = res.metricas || { wcpm: 0, precision_pct: 0, nivel_fluidez: 'bajo' };
     const l = res.lectura;
     const errores = res.errores || [];
-    
+
     document.getElementById('resultado-modal-title').innerHTML = `
       <div style="display:flex; align-items:center; gap:12px;">
         <div style="background:var(--accent); color:white; width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;">👤</div>
@@ -462,11 +489,10 @@ async function verResultadoDetalle(id, nombreEstudiante) {
         </div>
       </div>
     `;
-    
+
     document.getElementById('resultado-modal-body').innerHTML = `
       <div style="padding: 0; display: grid; grid-template-columns: 1.6fr 1fr; gap: 0; background: #ffffff; min-height: 600px;">
         
-        <!-- COLUMNA IZQUIERDA: LECTURA -->
         <div style="padding: 40px; background: white; overflow-y: auto; max-height: 75vh;">
           <div style="margin-bottom: 40px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -501,10 +527,8 @@ async function verResultadoDetalle(id, nombreEstudiante) {
           </div>
         </div>
 
-        <!-- COLUMNA DERECHA: DASHBOARD MÉTRICAS -->
         <div style="padding: 40px; background: #f8fafc; border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 30px; overflow-y: auto; max-height: 75vh;">
           
-          <!-- KPI DASHBOARD -->
           <div style="display:grid; grid-template-columns:1fr; gap:15px;">
             <div class="card" style="padding:24px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color:white; border-radius:24px; box-shadow: 0 15px 30px -10px rgba(15,23,42,0.3);">
               <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
@@ -528,7 +552,6 @@ async function verResultadoDetalle(id, nombreEstudiante) {
             </div>
           </div>
 
-          <!-- IA INSIGHT CARD -->
           <div class="card" style="padding:30px; background: white; border-radius:24px; border:1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); flex:1; display:flex; flex-direction:column;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
               <div style="background:var(--accent); color:white; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center;">🧠</div>
@@ -569,12 +592,12 @@ function renderErrorMap(res) {
   const texto = res.lectura.transcripcion_raw || "";
   const palabras = texto.split(' ');
   const errores = res.errores || [];
-  
+
   return palabras.map(p => {
     const norm = p.toLowerCase().replace(/[^\w\s]/g, "");
     // Buscar si esta palabra (limpia) coincide con alguna esperada que tuvo error
     const tieneError = errores.find(e => e.palabra_esperada && e.palabra_esperada.toLowerCase().replace(/[^\w\s]/g, "") === norm);
-    
+
     if (tieneError) {
       const color = tieneError.tipo === 'sustitucion' ? '#f59e0b' : (tieneError.tipo === 'insercion' ? '#3b82f6' : '#ef4444');
       return `<span style="background: ${color}15; border-bottom: 2px solid ${color}; padding: 2px 4px; border-radius: 4px; color: ${color}; font-weight: 700; cursor: help;" title="${tieneError.tipo.toUpperCase()}: esperada '${tieneError.palabra_esperada || '-'}'">${p}</span>`;
@@ -685,10 +708,10 @@ async function verHistorial(estId, nombre) {
     const hist = await api.getHistorial(estId);
     // Ordenar por fecha ascendente para el gráfico
     const histSorted = [...hist].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    
+
     document.getElementById('historial-modal-title').textContent = `Evolución: ${nombre}`;
     const tableContainer = document.getElementById('historial-tabla-container');
-    
+
     if (!hist.length) {
       tableContainer.innerHTML = '<p class="empty-cell">Sin lecturas completadas aún.</p>';
       if (historialChart) historialChart.destroy();
@@ -706,11 +729,11 @@ async function verHistorial(estId, nombre) {
       // Renderizar Gráfico
       const ctx = document.getElementById('chart-evolucion').getContext('2d');
       if (historialChart) historialChart.destroy();
-      
+
       historialChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: histSorted.map(h => new Date(h.fecha).toLocaleDateString('es-CL', {day:'numeric', month:'short'})),
+          labels: histSorted.map(h => new Date(h.fecha).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })),
           datasets: [{
             label: 'PPM (Palabras por Minuto)',
             data: histSorted.map(h => h.wcpm),
@@ -735,14 +758,14 @@ async function verHistorial(estId, nombre) {
       });
     }
     openModal('modal-historial');
-  } catch (e) { 
+  } catch (e) {
     console.error(e);
-    showToast('Error al cargar historial', 'error'); 
+    showToast('Error al cargar historial', 'error');
   }
 }
 
 function nivelLabel(n) {
-  return { bajo: 'Logro 1 (Bajo)', en_desarrollo: 'Logro 2 (En desarrollo)', logrado: 'Logro 3 (Logrado)', avanzado: 'Logro 4 (Avanzado)' }[n] || n;
+  return { bajo: 'Logro 1 (Bajo)', en_desarrollo: 'Logro 2 (En Desarrollo)', logrado: 'Logro 3 (Logrado)', avanzado: 'Logro 4 (Avanzado)' }[n] || n;
 }
 
 function showSection(name) {
@@ -884,10 +907,8 @@ async function generarReportePDF() {
     doc.text(`FluidezIA — Evaluación de Fluidez Lectora  |  Página ${i} de ${pageCount}`, W / 2, 290, { align: 'center' });
   }
 
-  const filename = `reporte_fluidez_${cursoFiltro || 'todos'}_${new Date().toISOString().slice(0,10)}.pdf`;
+  const filename = `reporte_fluidez_${cursoFiltro || 'todos'}_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(filename);
   closeModal('modal-reporte');
   showToast('✅ Reporte descargado correctamente', 'success');
 }
-
-// init(); // Removido para usar DOMContentLoaded
