@@ -1,26 +1,37 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="description" content="Sistema de evaluación de fluidez lectora para 1° básico — Vista Docente" />
   <meta name="theme-color" content="#0F172A" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ProfeIC">
+  <link rel="apple-touch-icon" href="assets/logo_profeic.png">
+
   <title>Fluidez Lectora · Docente</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Merriweather:wght@400;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Merriweather:wght@400;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="src/styles.css?v=20" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body data-view="docente">
 
-  <!-- ═══════════════════════════════════════════════════════ SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon" style="background: #ffffff; color: var(--accent); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: var(--shadow-sm);">📖</div>
+      <div class="logo-icon"
+        style="background: #ffffff; color: var(--accent); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: var(--shadow-sm);">
+        📖</div>
       <div>
         <div class="logo-title">FluidezIA</div>
         <div class="logo-sub" style="color: var(--accent2);">PANEL DOCENTE</div>
@@ -28,8 +39,10 @@
     </div>
 
     <nav class="sidebar-nav">
-      <div style="font-size: 11px; font-weight: 900; color: rgba(255,255,255,0.4); margin: 12px 16px 8px; text-transform: uppercase; letter-spacing: 1px;">AULA DOCENTE</div>
-      
+      <div
+        style="font-size: 11px; font-weight: 900; color: rgba(255,255,255,0.4); margin: 12px 16px 8px; text-transform: uppercase; letter-spacing: 1px;">
+        AULA DOCENTE</div>
+
       <button class="nav-item active" id="nav-textos" onclick="showSection('textos')">
         <span class="nav-icon">📖</span>
         <span>Biblioteca Textos</span>
@@ -46,9 +59,10 @@
         <span class="nav-icon">📊</span>
         <span>Panel de Resultados</span>
       </button>
-      
+
       <div style="margin-top: auto; padding: 16px;">
-        <button class="nav-item" style="width: 100%; color: rgba(255,255,255,0.5); font-size: 12px;" onclick="api.logout()">
+        <button class="nav-item" style="width: 100%; color: rgba(255,255,255,0.5); font-size: 12px;"
+          onclick="api.logout()">
           <span class="nav-icon">🚪</span>
           <span>Cerrar sesión</span>
         </button>
@@ -62,34 +76,36 @@
     </div>
   </aside>
 
-  <!-- ═══════════════════════════════════════════════════════ MAIN -->
   <main class="main-content">
 
-    <!-- HEADER PROFEIC AESTHETIC -->
-    <header class="topbar" style="background: white; border-bottom: 1px solid var(--border); padding: 24px 32px; box-shadow: var(--shadow-sm);">
+    <header class="topbar"
+      style="background: white; border-bottom: 1px solid var(--border); padding: 24px 32px; box-shadow: var(--shadow-sm);">
       <div class="topbar-left" style="display: flex; flex-direction: column; gap: 4px;">
         <button class="menu-toggle" onclick="toggleSidebar()" id="menuToggle">☰</button>
         <h1 class="topbar-title" id="topbarTitle" style="font-size: 24px; color: var(--text);">Mis Textos</h1>
-        <div style="font-size: 12px; font-weight: 900; color: var(--text2); letter-spacing: 1.5px; text-transform: uppercase;">MONITOREO DE APRENDIZAJES</div>
+        <div
+          style="font-size: 12px; font-weight: 900; color: var(--text2); letter-spacing: 1.5px; text-transform: uppercase;">
+          MONITOREO DE APRENDIZAJES</div>
       </div>
       <div class="topbar-right" style="display: flex; gap: 20px; align-items: center;">
-        <div class="status-indicator" id="apiStatus" style="background: #f8fafc; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);">
+        <div class="status-indicator" id="apiStatus"
+          style="background: #f8fafc; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);">
           <span class="dot"></span>
           <span class="label">Conectando...</span>
         </div>
-        <button class="btn btn-primary" style="background: #1e293b; color: white; padding: 12px 24px; border-radius: var(--radius-sm); font-size: 13px;" onclick="abrirModalReporte()">
+        <button class="btn btn-primary"
+          style="background: #1e293b; color: white; padding: 12px 24px; border-radius: var(--radius-sm); font-size: 13px;"
+          onclick="abrirModalReporte()">
           🏛️ Generar reporte de evaluación
         </button>
       </div>
     </header>
 
-    <!-- SUBHEADER (GREETING) -->
     <div style="padding: 32px 32px 0 32px; width: 100%;">
-        <h2 style="font-size: 28px; font-weight: 900; color: var(--accent); margin-bottom: 4px;">Hola Profe! 👋</h2>
-        <p style="color: var(--text2); font-weight: 500; font-size: 16px;">Resumen y gestión de fluidez lectora</p>
+      <h2 style="font-size: 28px; font-weight: 900; color: var(--accent); margin-bottom: 4px;">Hola Profe! 👋</h2>
+      <p style="color: var(--text2); font-weight: 500; font-size: 16px;">Resumen y gestión de fluidez lectora</p>
     </div>
 
-    <!-- ══ SECCIÓN: TEXTOS ══════════════════════════════════════════ -->
     <section class="section" id="section-textos">
       <div class="section-header">
         <div>
@@ -114,11 +130,9 @@
         </select>
       </div>
       <div class="cards-grid" id="lista-textos">
-        <!-- Cargado dinámicamente -->
       </div>
     </section>
 
-    <!-- ══ SECCIÓN: ESTUDIANTES ══════════════════════════════════════ -->
     <section class="section hidden" id="section-estudiantes">
       <div class="section-header">
         <div>
@@ -144,13 +158,11 @@
             </tr>
           </thead>
           <tbody id="lista-estudiantes">
-            <!-- Cargado dinámicamente -->
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- ══ SECCIÓN: SESIÓN ══════════════════════════════════════════ -->
     <section class="section hidden" id="section-sesion">
       <div class="section-header">
         <div>
@@ -213,7 +225,6 @@
       </div>
     </section>
 
-    <!-- ══ SECCIÓN: RESULTADOS ═══════════════════════════════════════ -->
     <section class="section hidden" id="section-resultados">
       <div class="section-header">
         <div>
@@ -241,15 +252,11 @@
       </div>
 
       <div id="lista-resultados" class="table-container">
-        <!-- Cargado dinámicamente -->
       </div>
     </section>
 
   </main>
 
-  <!-- ═══════════════════════════════════════ MODALES ════════════ -->
-
-  <!-- Modal: Reporte de Evaluación -->
   <div class="modal-overlay hidden" id="modal-reporte">
     <div class="modal" style="max-width: 500px;">
       <div class="modal-header">
@@ -281,7 +288,6 @@
     </div>
   </div>
 
-  <!-- Modal: QR Sesión Estudiante -->
   <div class="modal-overlay hidden" id="modal-qr-sesion">
     <div class="modal" style="max-width: 420px; text-align: center;">
       <div class="modal-header" style="justify-content: space-between;">
@@ -292,21 +298,26 @@
         <p style="color: var(--text2); margin-bottom: 20px; font-size: 15px;">
           El estudiante debe escanear este código QR con su tablet para iniciar su evaluación.
         </p>
-        <div id="qr-modal-container" style="background: white; display: inline-block; padding: 16px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);"></div>
+        <div id="qr-modal-container"
+          style="background: white; display: inline-block; padding: 16px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12);">
+        </div>
         <p style="color: var(--text2); font-size: 12px; margin-top: 16px;">También puedes compartir el enlace:</p>
-        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 8px; display: flex; gap: 8px; align-items: center;">
-          <span id="qr-modal-url" style="font-family: monospace; font-size: 11px; flex: 1; word-break: break-all; text-align: left; color: var(--text2);"></span>
+        <div
+          style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+          <span id="qr-modal-url"
+            style="font-family: monospace; font-size: 11px; flex: 1; word-break: break-all; text-align: left; color: var(--text2);"></span>
           <button class="btn btn-sm" onclick="copiarUrlQR()">📋</button>
         </div>
         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); text-align: left;">
-          <p style="font-weight: 700; color: var(--text); margin-bottom: 8px;">⏳ Esperando que el estudiante termine...</p>
-          <p style="font-size: 13px; color: var(--text2);">Cuando el alumno presione "Terminar lectura", el resultado aparecerá automáticamente en tu <strong>Panel de Resultados</strong>.</p>
+          <p style="font-weight: 700; color: var(--text); margin-bottom: 8px;">⏳ Esperando que el estudiante termine...
+          </p>
+          <p style="font-size: 13px; color: var(--text2);">Cuando el alumno presione "Terminar lectura", el resultado
+            aparecerá automáticamente en tu <strong>Panel de Resultados</strong>.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Nuevo Texto -->
   <div class="modal-overlay hidden" id="modal-nuevo-texto">
     <div class="modal">
       <div class="modal-header">
@@ -345,7 +356,6 @@
     </div>
   </div>
 
-  <!-- Modal: Nuevo Estudiante -->
   <div class="modal-overlay hidden" id="modal-nuevo-estudiante">
     <div class="modal">
       <div class="modal-header">
@@ -380,7 +390,6 @@
     </div>
   </div>
 
-  <!-- Modal: Resultado Detallado -->
   <div class="modal-overlay hidden" id="modal-resultado">
     <div class="modal modal-lg">
       <div class="modal-header">
@@ -388,7 +397,6 @@
         <button class="modal-close" onclick="closeModal('modal-resultado')">✕</button>
       </div>
       <div id="resultado-modal-body">
-        <!-- Cargado dinámicamente -->
       </div>
     </div>
   </div>
@@ -407,4 +415,5 @@
     }
   </script>
 </body>
+
 </html>
