@@ -52,11 +52,10 @@ async def listar_textos(
 @router.get("/{texto_id}", response_model=TextoOut)
 async def obtener_texto(
     texto_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     t = await db.get(Texto, texto_id)
-    if not t or (current_user.rol != "admin" and t.docente_id is not None and str(t.docente_id) != str(current_user.id)):
+    if not t:
         raise HTTPException(status_code=404, detail="Texto no encontrado")
     return _to_out(t)
 
