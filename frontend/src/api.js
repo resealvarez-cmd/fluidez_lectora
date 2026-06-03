@@ -100,6 +100,11 @@ const api = {
   },
   getUsuario: () => JSON.parse(localStorage.getItem('fl_usuario') || 'null'),
 
+  // ── Admin: Gestión de docentes
+  getUsuarios: () => api.get('/api/auth/usuarios'),
+  resetPassword: (id, nueva_password) => api.post(`/api/auth/usuarios/${id}/reset-password`, { nueva_password }),
+  eliminarUsuario: (id) => api.delete(`/api/auth/usuarios/${id}`),
+
   // ── Estudiantes
   getEstudiantes: () => api.get("/api/estudiantes/"),
   crearEstudiante: (d) => api.post("/api/estudiantes/", d),

@@ -61,6 +61,12 @@
         <span>Panel de Resultados</span>
       </button>
 
+      <!-- Solo visible para admin -->
+      <button class="nav-item hidden" id="nav-docentes" onclick="showSection('docentes')">
+        <span class="nav-icon">👥</span>
+        <span>Gestión Docentes</span>
+      </button>
+
       <div style="margin-top: auto; padding: 16px;">
         <button class="nav-item" style="width: 100%; color: rgba(255,255,255,0.5); font-size: 12px;"
           onclick="api.logout()">
@@ -256,6 +262,31 @@
       </div>
     </section>
 
+    <!-- Sección Admin: Gestión de Docentes -->
+    <section class="section hidden" id="section-docentes">
+      <div class="section-header">
+        <div>
+          <h2>Gestión de Docentes</h2>
+          <p class="section-desc">Administra los usuarios y sus accesos al sistema</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-nuevo-docente')">+ Nuevo Docente</button>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Creado</th>
+              <th style="text-align:right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="lista-docentes"></tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
   <div class="modal-overlay hidden" id="modal-reporte">
@@ -402,10 +433,59 @@
     </div>
   </div>
 
+  <!-- Modal: Nuevo Docente -->
+  <div class="modal-overlay hidden" id="modal-nuevo-docente">
+    <div class="modal" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3>👥 Nuevo Docente</h3>
+        <button class="modal-close" onclick="closeModal('modal-nuevo-docente')">✕</button>
+      </div>
+      <form onsubmit="crearDocente(event)">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" class="form-input" id="doc-nombre" placeholder="Nombre Apellido" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input type="email" class="form-input" id="doc-email" placeholder="profe@colegio.cl" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña inicial</label>
+          <input type="password" class="form-input" id="doc-password" placeholder="Mínimo 6 caracteres" required minlength="6" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('modal-nuevo-docente')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Reset Contraseña Docente -->
+  <div class="modal-overlay hidden" id="modal-reset-password">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3>🔑 Cambiar Contraseña</h3>
+        <button class="modal-close" onclick="closeModal('modal-reset-password')">✕</button>
+      </div>
+      <div style="padding: 24px;">
+        <p style="color: var(--text2); margin-bottom: 20px; font-size: 14px;">Cambiando contraseña de: <strong id="reset-docente-email"></strong></p>
+        <div class="form-group">
+          <label class="form-label">Nueva contraseña</label>
+          <input type="password" class="form-input" id="reset-nueva-password" placeholder="Mínimo 6 caracteres" minlength="6" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal('modal-reset-password')">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmarResetPassword()">Guardar contraseña</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
-  <script src="src/api.js?v=25"></script>
-  <script src="src/docente.js?v=30"></script>
+  <script src="src/api.js?v=27"></script>
+  <script src="src/docente.js?v=31"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

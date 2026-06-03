@@ -3,7 +3,9 @@ Router: Auth — Login y registro de docentes
 """
 from jose import jwt  # Regresamos a python-jose por requerimiento de producción
 from datetime import datetime, timedelta
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi.security import OAuth2PasswordBearer
@@ -105,3 +107,61 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 @router.get("/me", response_model=UsuarioOut)
 async def me(usuario: Usuario = Depends(get_current_user)):
     return _to_out(usuario)
+
+
+# ── Admin: gestión de usuarios ────────────────────────────────────────────────
+
+@router.get("/usuarios", response_model=List[UsuarioOut])
+async def listar_usuarios(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Lista todos los usuarios (solo admin)"""
+    from typing import List as _List
+    if current_user.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    result = await db.execute(select(Usuario).order_by(Usuario.created_at))
+    return [_to_out(u) for u in result.scalars().all()]
+
+
+class ResetPasswordRequest(BaseModel):
+    nueva_password: str
+
+
+@router.post("/usuarios/{usuario_id}/reset-password")
+async def reset_password(
+    usuario_id: str,
+    data: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Resetea la contraseña de un usuario (solo admin)"""
+    if current_user.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    usuario = await db.get(Usuario, usuario_id)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    if len(data.nueva_password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+    usuario.hashed_password = hash_password(data.nueva_password)
+    await db.commit()
+    return {"status": "ok", "email": usuario.email}
+
+
+@router.delete("/usuarios/{usuario_id}")
+async def eliminar_usuario(
+    usuario_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Elimina un usuario (solo admin, no puede eliminarse a sí mismo)"""
+    if current_user.rol != "admin":
+        raise HTTPException(status_code=403, detail="Solo administradores")
+    if str(current_user.id) == usuario_id:
+        raise HTTPException(status_code=400, detail="No puedes eliminar tu propia cuenta")
+    usuario = await db.get(Usuario, usuario_id)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    await db.delete(usuario)
+    await db.commit()
+    return {"status": "ok"}

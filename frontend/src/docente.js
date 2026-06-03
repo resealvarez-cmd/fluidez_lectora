@@ -13,6 +13,8 @@ async function init() {
     const logotitle = document.querySelector('.logo-title');
     if (logotitle && _usuario) logotitle.textContent = _usuario.nombre.split(' ')[0];
 
+    initAdmin(); // Mostrar menú admin si corresponde
+
     await checkHealth();
     await loadTextos();
     await loadEstudiantes();
@@ -774,8 +776,9 @@ function showSection(name) {
   document.getElementById(`section-${name}`).classList.remove('hidden');
   document.getElementById(`nav-${name}`)?.classList.add('active');
   document.getElementById('topbarTitle').textContent =
-    { textos: 'Biblioteca Textos', estudiantes: 'Estudiantes', sesion: 'Evaluar Fluidez', resultados: 'Resultados' }[name];
+    { textos: 'Biblioteca Textos', estudiantes: 'Estudiantes', sesion: 'Evaluar Fluidez', resultados: 'Resultados', docentes: 'Gestión de Docentes' }[name];
   if (name === 'resultados') loadResultados();
+  if (name === 'docentes') loadDocentes();
 }
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -911,4 +914,98 @@ async function generarReportePDF() {
   doc.save(filename);
   closeModal('modal-reporte');
   showToast('✅ Reporte descargado correctamente', 'success');
+}
+
+// ── Admin: Gestión de Docentes ────────────────────────────────────────────────
+let _docenteResetId = null;
+
+function initAdmin() {
+  // Mostrar sección de gestión si es admin
+  if (_usuario && _usuario.rol === 'admin') {
+    const navDocentes = document.getElementById('nav-docentes');
+    if (navDocentes) navDocentes.classList.remove('hidden');
+  }
+}
+
+async function loadDocentes() {
+  try {
+    const usuarios = await api.getUsuarios();
+    renderDocentes(usuarios);
+  } catch (e) {
+    showToast('Error al cargar docentes', 'error');
+  }
+}
+
+function renderDocentes(usuarios) {
+  const tbody = document.getElementById('lista-docentes');
+  if (!tbody) return;
+  if (!usuarios.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No hay usuarios registrados</td></tr>';
+    return;
+  }
+  tbody.innerHTML = usuarios.map(u => `
+    <tr>
+      <td><strong>${u.nombre}</strong></td>
+      <td>${u.email}</td>
+      <td><span class="chip ${u.rol === 'admin' ? 'success' : ''}">${u.rol}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString('es-CL')}</td>
+      <td style="text-align:right; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-sm" onclick="abrirResetPassword('${u.id}', '${u.email}')">🔑 Contraseña</button>
+        ${u.id !== _usuario?.id ? `<button class="btn btn-sm btn-ghost" style="color:var(--error)" onclick="eliminarDocente('${u.id}', '${u.nombre}')">🗑️</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function crearDocente(e) {
+  e.preventDefault();
+  const data = {
+    nombre: document.getElementById('doc-nombre').value.trim(),
+    email: document.getElementById('doc-email').value.trim(),
+    password: document.getElementById('doc-password').value,
+  };
+  try {
+    await api.register(data.nombre, data.email, data.password);
+    closeModal('modal-nuevo-docente');
+    e.target.reset();
+    showToast('✅ Docente creado correctamente', 'success');
+    await loadDocentes();
+  } catch (err) {
+    let msg = 'Error al crear el docente.';
+    try { const b = JSON.parse(err.message); if (b.detail) msg = b.detail; } catch (_) {}
+    showToast(msg, 'error');
+  }
+}
+
+function abrirResetPassword(id, email) {
+  _docenteResetId = id;
+  document.getElementById('reset-docente-email').textContent = email;
+  document.getElementById('reset-nueva-password').value = '';
+  openModal('modal-reset-password');
+}
+
+async function confirmarResetPassword() {
+  const pw = document.getElementById('reset-nueva-password').value;
+  if (!pw || pw.length < 6) {
+    showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+    return;
+  }
+  try {
+    await api.resetPassword(_docenteResetId, pw);
+    closeModal('modal-reset-password');
+    showToast('✅ Contraseña actualizada correctamente', 'success');
+  } catch (e) {
+    showToast('Error al actualizar contraseña', 'error');
+  }
+}
+
+async function eliminarDocente(id, nombre) {
+  if (!confirm(`¿Eliminar al docente "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await api.eliminarUsuario(id);
+    showToast('Docente eliminado', 'success');
+    await loadDocentes();
+  } catch (e) {
+    showToast('Error al eliminar', 'error');
+  }
 }
