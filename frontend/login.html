@@ -95,7 +95,7 @@
     </div>
   </div>
 
-  <script src="src/api.js?v=5"></script>
+  <script src="src/api.js?v=26"></script>
   <script>
     // Redirect if already logged in
     if (localStorage.getItem('fl_token')) {
@@ -128,7 +128,7 @@
         localStorage.setItem('fl_usuario', JSON.stringify(res.usuario));
         window.location.href = '/';
       } catch (err) {
-        showError('login-error', 'Correo o contraseña incorrectos.');
+        showError('login-error', 'Correo o contraseña incorrectos. Verifica tus datos e intenta nuevamente.');
         btn.textContent = 'Entrar al panel →'; btn.disabled = false;
       }
     }
@@ -148,7 +148,13 @@
         localStorage.setItem('fl_usuario', JSON.stringify(res.usuario));
         window.location.href = '/';
       } catch (err) {
-        showError('register-error', 'No se pudo crear la cuenta. El correo puede estar en uso.');
+        // Intentar extraer el mensaje del backend
+        let msg = 'No se pudo crear la cuenta.';
+        try {
+          const body = JSON.parse(err.message);
+          if (body.detail) msg = body.detail;
+        } catch (_) {}
+        showError('register-error', msg);
         btn.textContent = 'Crear cuenta →'; btn.disabled = false;
       }
     }
