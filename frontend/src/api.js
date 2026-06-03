@@ -7,13 +7,27 @@ const API_BASE = "https://fluidez-lectora.onrender.com";
 const api = {
   _token: () => localStorage.getItem('fl_token'),
 
+  _handleUnauthorized(status) {
+    if (status === 401) {
+      console.warn('Token expirado o inválido. Redirigiendo al login...');
+      localStorage.removeItem('fl_token');
+      localStorage.removeItem('fl_usuario');
+      window.location.href = 'login.html';
+      return true;
+    }
+    return false;
+  },
+
   async get(path) {
     try {
       const headers = {};
       const t = api._token();
       if (t) headers['Authorization'] = `Bearer ${t}`;
       const r = await fetch(API_BASE + path, { headers });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        if (api._handleUnauthorized(r.status)) return;
+        throw new Error(await r.text());
+      }
       return r.json();
     } catch (err) {
       console.error(`API GET Error [${path}]:`, err);
@@ -30,7 +44,10 @@ const api = {
         headers,
         body: JSON.stringify(body),
       });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        if (api._handleUnauthorized(r.status)) return;
+        throw new Error(await r.text());
+      }
       return r.json();
     } catch (err) {
       console.error(`API POST Error [${path}]:`, err);
@@ -43,7 +60,10 @@ const api = {
       const t = api._token();
       if (t) headers['Authorization'] = `Bearer ${t}`;
       const r = await fetch(API_BASE + path, { method: "DELETE", headers });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        if (api._handleUnauthorized(r.status)) return;
+        throw new Error(await r.text());
+      }
       return r.json();
     } catch (err) {
       console.error(`API DELETE Error [${path}]:`, err);
@@ -56,7 +76,10 @@ const api = {
       const t = api._token();
       if (t) headers['Authorization'] = `Bearer ${t}`;
       const r = await fetch(API_BASE + path, { method: "POST", headers, body: formData });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        if (api._handleUnauthorized(r.status)) return;
+        throw new Error(await r.text());
+      }
       return r.json();
     } catch (err) {
       console.error(`API UPLOAD Error [${path}]:`, err);

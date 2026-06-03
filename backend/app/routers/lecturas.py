@@ -189,11 +189,23 @@ async def _procesar_audio_background(
                 await db.commit()
                 return
 
+            # Determinar nivel del curso del estudiante
+            estudiante = await db.get(Estudiante, lectura.estudiante_id)
+            nivel_curso = "1° Básico"
+            if estudiante and estudiante.curso:
+                # Mapear código de curso (ej: '3A', '3B') a nivel legible
+                import re as _re
+                match = _re.match(r'^(\d+)', estudiante.curso)
+                if match:
+                    num = match.group(1)
+                    nivel_curso = f"{num}° Básico"
+
             # Evaluar
             resultado = await evaluar_lectura(
                 audio_bytes=audio_bytes,
                 texto_esperado=texto.contenido,
                 audio_filename=audio_filename,
+                nivel_curso=nivel_curso,
             )
 
             # 3. Manejar métricas (Update or Create)
@@ -300,7 +312,11 @@ async def obtener_resultado(lectura_id: str, db: AsyncSession = Depends(get_db))
 
 
 @router.delete("/{lectura_id}")
-async def eliminar_lectura(lectura_id: str, db: AsyncSession = Depends(get_db)):
+async def eliminar_lectura(
+    lectura_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
     """Elimina una sesión de lectura"""
     lectura = await db.get(Lectura, lectura_id)
     if not lectura:

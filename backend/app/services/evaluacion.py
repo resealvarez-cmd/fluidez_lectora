@@ -159,7 +159,8 @@ async def transcribir_con_gemini(audio_bytes: bytes, filename: str = "audio.webm
 async def analizar_clinicamente_con_gemini(
     texto_esperado: str, 
     transcripcion_whisper: str, 
-    lista_errores_alineacion: str
+    lista_errores_alineacion: str,
+    nivel_curso: str = "1° Básico"
 ) -> str:
     """
     Envía los datos procesados a Gemini para un análisis clínico profundo,
@@ -173,9 +174,10 @@ async def analizar_clinicamente_con_gemini(
     
     prompt = f"""
 Eres un experto en Psicopedagogía y Neurociencia de la Lectura. 
-Analiza el desempeño de un estudiante de 1° Básico al leer un texto.
+Analiza el desempeño de un estudiante de {nivel_curso} al leer un texto.
 
 DATOS DE ENTRADA PROVISTOS POR EL SISTEMA:
+- NIVEL DEL ESTUDIANTE: {nivel_curso}
 - TEXTO ESPERADO: "{texto_esperado}"
 - TRANSCRIPCIÓN LITERAL (Motor ASR): "{transcripcion_whisper}"
 - DESVIACIONES DETECTADAS (Algoritmo Levenshtein): "{lista_errores_alineacion}"
@@ -185,7 +187,8 @@ TAREAS:
    - FASE DE LECTURA: Determina si es Pre-silábica, Silábica, Silábico-Alfabética o Alfabética.
    - TIPO DE ERROR: Clasifica las desviaciones detectadas en visual, fonológico o semántico. PROHIBIDO inventar o listar errores que no existan en los 'DATOS DE ENTRADA'.
    - PROSODIA: ¿Muestra entonación? ¿Hace pausas donde no hay puntos?
-2. PLAN DE INTERVENCIÓN: Sugiere 3 actividades basadas en la 'Ciencia de la Lectura'.
+   - CONTEXTO DE NIVEL: Ten en cuenta que es un estudiante de {nivel_curso} al evaluar su desempeño y hacer recomendaciones apropiadas para su etapa.
+2. PLAN DE INTERVENCIÓN: Sugiere 3 actividades basadas en la 'Ciencia de la Lectura' apropiadas para {nivel_curso}.
 
 RESPONDE ESTRICTAMENTE EN ESTE FORMATO JSON:
 {{
@@ -349,21 +352,45 @@ def detectar_repeticiones(tokens: List[WordToken]) -> int:
 
 # ─── CLASIFICACIÓN POR NIVEL ─────────────────────────────────────────────────
 
+# ─── UMBRALES WCPM POR NIVEL (MINEDUC/ACE Chile) ─────────────────────────────
+# Formato por grado: (wcpm_bajo, wcpm_en_desarrollo, wcpm_logrado, wcpm_avanzado)
+# wcpm_logrado = mínimo para "logrado"; wcpm_avanzado = mínimo para "avanzado"
+WCPM_BENCHMARKS = {
+    1: (0, 20, 40, 60),   # 1° Básico
+    2: (0, 35, 60, 85),   # 2° Básico
+    3: (0, 55, 85, 110),  # 3° Básico
+    4: (0, 70, 100, 125), # 4° Básico
+    5: (0, 85, 115, 140), # 5° Básico
+    6: (0, 95, 125, 150), # 6° Básico
+    7: (0, 100, 130, 160),# 7° Básico
+    8: (0, 105, 135, 165),# 8° Básico
+}
+
+
+def _get_wcpm_thresholds(nivel_curso: str) -> tuple:
+    """Extrae el número de grado del string de nivel y devuelve umbrales WCPM."""
+    import re
+    match = re.match(r'(\d+)', nivel_curso)
+    grado = int(match.group(1)) if match else 1
+    return WCPM_BENCHMARKS.get(grado, WCPM_BENCHMARKS[1])
+
+
 def clasificar_nivel_fluidez(
-    precision_pct: float, 
-    wcpm: float, 
-    pausas_largas: int, 
+    precision_pct: float,
+    wcpm: float,
+    pausas_largas: int,
     vacilaciones: int,
     total_palabras: int,
-    errores: int
+    errores: int,
+    nivel_curso: str = "1° Básico"
 ) -> str:
     """
-    Rúbrica Bifurcada:
+    Rúbrica Bifurcada con umbrales por grado:
     - Textos Breves (< 30 palabras): Basada en conteo absoluto de errores.
-    - Textos Estándar (>= 30 palabras): Basada en % de precisión y WCPM.
+    - Textos Estándar (>= 30 palabras): Basada en % de precisión y WCPM por grado.
     """
     if total_palabras < 30:
-        # Lógica para Textos Breves
+        # Lógica para Textos Breves (igual para todos los grados)
         if errores == 0:
             return "avanzado"
         elif errores == 1:
@@ -373,12 +400,14 @@ def clasificar_nivel_fluidez(
         else:
             return "bajo"
     else:
-        # Lógica para Textos Estándar (ACE)
-        if precision_pct <= 89.0 or pausas_largas >= 5 or wcpm < 20:
+        # Lógica para Textos Estándar con umbrales por grado
+        _, wcpm_min_desarrollo, wcpm_min_logrado, wcpm_min_avanzado = _get_wcpm_thresholds(nivel_curso)
+
+        if precision_pct <= 89.0 or pausas_largas >= 5 or wcpm < wcpm_min_desarrollo:
             return "bajo"
-        elif precision_pct < 95.0 or vacilaciones >= 5 or wcpm < 40:
+        elif precision_pct < 95.0 or vacilaciones >= 5 or wcpm < wcpm_min_logrado:
             return "en_desarrollo"
-        elif wcpm >= 60 and pausas_largas == 0 and vacilaciones <= 2 and precision_pct >= 95.0:
+        elif wcpm >= wcpm_min_avanzado and pausas_largas == 0 and vacilaciones <= 2 and precision_pct >= 95.0:
             return "avanzado"
         else:
             return "logrado"
@@ -389,7 +418,8 @@ def clasificar_nivel_fluidez(
 async def evaluar_lectura(
     audio_bytes: bytes,
     texto_esperado: str,
-    audio_filename: str = "audio.webm"
+    audio_filename: str = "audio.webm",
+    nivel_curso: str = "1° Básico"
 ) -> EvaluacionResult:
     """
     Pipeline completo de evaluación de fluidez lectora.
@@ -507,7 +537,7 @@ async def evaluar_lectura(
     
     precision_pct = round((palabras_correctas / total_palabras * 100) if total_palabras > 0 else 0.0, 2)
 
-    # 9. Nivel de fluidez (Rúbrica Bifurcada)
+    # 9. Nivel de fluidez (Rúbrica Bifurcada por grado)
     errores_totales = omisiones + sustituciones
     nivel_fluidez = clasificar_nivel_fluidez(
         precision_pct, 
@@ -515,7 +545,8 @@ async def evaluar_lectura(
         pausas_largas, 
         vacilaciones,
         total_palabras,
-        errores_totales
+        errores_totales,
+        nivel_curso=nivel_curso
     )
     
     # Etiquetas para el contrato
@@ -541,7 +572,8 @@ async def evaluar_lectura(
         feedback_ia = await analizar_clinicamente_con_gemini(
             texto_esperado=texto_esperado,
             transcripcion_whisper=transcripcion_raw,
-            lista_errores_alineacion=lista_errores_str
+            lista_errores_alineacion=lista_errores_str,
+            nivel_curso=nivel_curso
         )
 
     resultado = EvaluacionResult(
