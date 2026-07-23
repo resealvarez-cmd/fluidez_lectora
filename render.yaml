@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: fluidez-lectora
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Se configura manualmente en el dashboard de Render
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: ASR_ENGINE
+        value: gemini
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: AUDIO_STORAGE_BUCKET
+        value: lecturas-audio
+      - key: SECRET_KEY
+        sync: false
+      - key: PAUSA_LARGA_SEGUNDOS
+        value: "2.0"
+      - key: VACILACION_SEGUNDOS
+        value: "1.0"
