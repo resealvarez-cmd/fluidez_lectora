@@ -1,7 +1,10 @@
 """
 Aplicación FastAPI — Entry point
 """
+import asyncio
+import logging
 import uvicorn
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -9,30 +12,64 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 from app.config import get_settings
 from app.database import init_db
-from app.routers import estudiantes, textos, lecturas, auth
 
 settings = get_settings()
-
-
-import logging
-
 logger = logging.getLogger(__name__)
 
+# ─── KEEPALIVE: Mantiene Supabase despierto ────────────────────────────────────
+
+KEEPALIVE_INTERVAL_HOURS = 6  # Ping a la DB cada 6 horas
+
+async def _db_keepalive_loop():
+    """
+    Tarea de fondo que ejecuta un SELECT 1 cada 6 horas.
+    Previene que Supabase pause el proyecto por inactividad.
+    (Supabase pausa proyectos gratuitos tras 7 días sin actividad)
+    """
+    from app.database import engine
+    from sqlalchemy import text
+
+    while True:
+        await asyncio.sleep(KEEPALIVE_INTERVAL_HOURS * 3600)
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+            logger.info(f"[keepalive] ✅ Ping a Supabase OK — {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+        except Exception as e:
+            logger.warning(f"[keepalive] ⚠️  Ping a Supabase falló: {e}")
+
+
+# ─── LIFESPAN ─────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Inicializa la base de datos al arrancar (tolerante a fallos)"""
+    """Inicializa la DB y lanza el keepalive al arrancar"""
     try:
         await init_db()
         logger.info("✅ Base de datos inicializada correctamente")
     except Exception as e:
-        logger.error(f"⚠️  No se pudo conectar a la base de datos al arrancar: {e}")
+        logger.error(f"⚠️  No se pudo conectar a la DB al arrancar: {e}")
         logger.warning("El servidor arrancará de todas formas. Verifica DATABASE_URL y el estado de Supabase.")
-    # Crear directorio de audio si no existe
+
     Path("audio_storage").mkdir(exist_ok=True)
+
+    # Lanzar keepalive en background
+    keepalive_task = asyncio.create_task(_db_keepalive_loop())
+    logger.info(f"🔄 Keepalive iniciado — ping cada {KEEPALIVE_INTERVAL_HOURS}h")
+
     yield
 
+    # Cancelar keepalive al apagar el servidor
+    keepalive_task.cancel()
+    try:
+        await keepalive_task
+    except asyncio.CancelledError:
+        pass
 
+
+# ─── APP ──────────────────────────────────────────────────────────────────────
+
+from app.routers import estudiantes, textos, lecturas, auth
 
 app = FastAPI(
     title="Fluidez Lectora API",
@@ -41,12 +78,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — Configuración unificada para producción
+# CORS
 origins = [
     "https://fluidezcmp.netlify.app",
     "https://fluidez-lectora.onrender.com",
     "http://localhost:3000",
-    "http://localhost:8000"
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -63,14 +100,24 @@ app.include_router(estudiantes.router)
 app.include_router(textos.router)
 app.include_router(lecturas.router)
 
-# Servir audios guardados localmente
+# Audios locales
 audio_dir = Path("audio_storage")
 audio_dir.mkdir(exist_ok=True)
 app.mount("/audio", StaticFiles(directory=str(audio_dir)), name="audio")
 
 
+# ─── ENDPOINTS DE SISTEMA ─────────────────────────────────────────────────────
+
+@app.get("/ping")
+async def ping():
+    """Endpoint ultraliviano para servicios de monitoreo externos (UptimeRobot, cron-job.org).
+    No consulta la DB — solo confirma que el servidor está vivo."""
+    return {"pong": True}
+
+
 @app.get("/health")
 async def health():
+    """Estado completo del servidor + conexión a la base de datos."""
     from app.database import engine
     from sqlalchemy import text
     db_status = "unknown"
@@ -84,8 +131,8 @@ async def health():
         "status": "ok" if db_status == "ok" else "degraded",
         "version": "1.0.0",
         "database": db_status,
+        "keepalive_interval_hours": KEEPALIVE_INTERVAL_HOURS,
     }
-
 
 
 if __name__ == "__main__":
