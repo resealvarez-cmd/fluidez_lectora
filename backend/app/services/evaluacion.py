@@ -137,7 +137,7 @@ async def transcribir_con_gemini(audio_bytes: bytes, filename: str = "audio.webm
     if not settings.GOOGLE_API_KEY:
         return _mock_whisper_response()
 
-    model = genai.GenerativeModel("gemini-flash-latest")
+    model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = "Transcribe el audio de forma literal, palabra por palabra, sin corregir errores ni añadir comentarios."
     
     # Simular estructura de Whisper para compatibilidad
@@ -170,7 +170,7 @@ async def analizar_clinicamente_con_gemini(
         return "Análisis clínico no disponible (sin API Key)."
 
     import json
-    model = genai.GenerativeModel("gemini-flash-latest")
+    model = genai.GenerativeModel("gemini-1.5-flash")
     
     prompt = f"""
 Eres un experto en Psicopedagogía y Neurociencia de la Lectura. 
