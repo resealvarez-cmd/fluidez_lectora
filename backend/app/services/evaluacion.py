@@ -20,8 +20,11 @@ from app.config import get_settings
 settings = get_settings()
 
 if settings.GOOGLE_API_KEY:
-    import google.generativeai as genai
-    genai.configure(api_key=settings.GOOGLE_API_KEY)
+    from google import genai as genai_client
+    from google.genai import types as genai_types
+    _genai_client = genai_client.Client(api_key=settings.GOOGLE_API_KEY)
+else:
+    _genai_client = None
 
 
 # ─── ESTRUCTURAS ─────────────────────────────────────────────────────────────
@@ -134,17 +137,17 @@ async def transcribir_con_gemini(audio_bytes: bytes, filename: str = "audio.webm
     """
     Usa Gemini para transcripción literal (cuando Whisper no está disponible).
     """
-    if not settings.GOOGLE_API_KEY:
+    if not settings.GOOGLE_API_KEY or _genai_client is None:
         return _mock_whisper_response()
 
-    model = genai.GenerativeModel("gemini-1.5-flash")
     prompt = "Transcribe el audio de forma literal, palabra por palabra, sin corregir errores ni añadir comentarios."
-    
-    # Simular estructura de Whisper para compatibilidad
-    response = await model.generate_content_async([
-        prompt,
-        {"mime_type": "audio/webm", "data": audio_bytes}
-    ])
+    response = await _genai_client.aio.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=[
+            prompt,
+            genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/webm"),
+        ],
+    )
     
     text = response.text.strip()
     words = [{"word": w, "start": 0.0, "end": 0.0} for w in text.split()]
@@ -166,11 +169,10 @@ async def analizar_clinicamente_con_gemini(
     Envía los datos procesados a Gemini para un análisis clínico profundo,
     evitando alucinaciones al proveerle la transcripción y errores detectados.
     """
-    if not settings.GOOGLE_API_KEY:
+    if not settings.GOOGLE_API_KEY or _genai_client is None:
         return "Análisis clínico no disponible (sin API Key)."
 
     import json
-    model = genai.GenerativeModel("gemini-1.5-flash")
     
     prompt = f"""
 Eres un experto en Psicopedagogía y Neurociencia de la Lectura. 
@@ -202,7 +204,10 @@ RESPONDE ESTRICTAMENTE EN ESTE FORMATO JSON:
 """
 
     try:
-        response = await model.generate_content_async(prompt)
+        response = await _genai_client.aio.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[prompt],
+        )
         clean_json = response.text.replace("```json", "").replace("```", "").strip()
         data = json.loads(clean_json)
         fb = data.get("feedback", {})

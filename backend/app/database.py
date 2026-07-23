@@ -7,45 +7,58 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from app.config import get_settings
 from app.models import Base
 from sqlalchemy.pool import NullPool
+import ssl
 
 settings = get_settings()
 
 
-def _build_db_url(url: str) -> str:
+def _build_db_url(url: str) -> tuple[str, dict]:
     """
-    Normaliza la URL de conexión:
+    Normaliza la URL de conexión y devuelve (url_limpia, connect_args).
+    - asyncpg NO acepta ssl= como query param → va en connect_args
     - postgresql://  → postgresql+asyncpg://
     - postgres://    → postgresql+asyncpg://  (formato Supabase/Heroku)
     - sqlite:///     → sqlite+aiosqlite:///
     """
+    connect_args: dict = {}
+
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql+asyncpg://", 1)
     elif url.startswith("postgresql://") and "+asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     elif url.startswith("sqlite:///") and "+aiosqlite" not in url:
         url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
-    
-    # Asegurar SSL para PostgreSQL en producción (Vital para Render/Supabase)
-    if "postgresql" in url and "ssl" not in url:
-        separator = "&" if "?" in url else "?"
-        url += f"{separator}ssl=require"
-        
-    return url
+
+    if "postgresql" in url:
+        # Eliminar ssl= de la URL (asyncpg no lo soporta como query param)
+        import re
+        url = re.sub(r'[?&]ssl=[^&]*', '', url)
+        url = re.sub(r'[?&]sslmode=[^&]*', '', url)
+        url = url.rstrip('?&')
+
+        # Pasar SSL correctamente via connect_args
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        connect_args = {
+            "ssl": ssl_ctx,
+            "prepared_statement_cache_size": 0,
+            "statement_cache_size": 0,
+        }
+
+    return url, connect_args
 
 
-_db_url = _build_db_url(settings.DATABASE_URL)
+_db_url, _connect_args = _build_db_url(settings.DATABASE_URL)
 _is_sqlite = "sqlite" in _db_url
 
 # Configuración del motor (Engine)
 if not _is_sqlite:
-    # Producción: Desactivar totalmente el caché de sentencias para compatibilidad con Supabase Pooler
+    # Producción: NullPool para compatibilidad con Supabase Pooler (PgBouncer)
     engine = create_async_engine(
         _db_url,
         poolclass=NullPool,
-        connect_args={
-            "prepared_statement_cache_size": 0,
-            "statement_cache_size": 0
-        }
+        connect_args=_connect_args,
     )
 else:
     # Desarrollo local: SQLite
